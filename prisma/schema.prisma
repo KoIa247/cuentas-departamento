@@ -1,0 +1,75 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider     = "mongodb"
+  url          = env("DATABASE_URL")
+  relationMode = "prisma"
+}
+
+model Category {
+  id                String             @id @default(auto()) @map("_id") @db.ObjectId
+  name              String
+  color             String             @default("#6366f1")
+  icon              String             @default("💰")
+  payments          Payment[]
+  recurringPayments RecurringPayment[]
+  createdAt         DateTime           @default(now())
+}
+
+model Payment {
+  id         String   @id @default(auto()) @map("_id") @db.ObjectId
+  date       DateTime
+  categoryId String   @db.ObjectId
+  category   Category @relation(fields: [categoryId], references: [id])
+  item       String
+  amount     Float
+  currency   String   @default("PEN")
+  quantity   Int      @default(1)
+  month      Int
+  year       Int
+  notes      String?
+  createdAt  DateTime @default(now())
+}
+
+model RecurringPayment {
+  id         String              @id @default(auto()) @map("_id") @db.ObjectId
+  categoryId String              @db.ObjectId
+  category   Category            @relation(fields: [categoryId], references: [id])
+  item       String
+  amount     Float
+  currency   String              @default("PEN")
+  quantity   Int                 @default(1)
+  dayOfMonth Int?
+  isActive   Boolean             @default(true)
+  notes      String?
+  instances  RecurringInstance[]
+  createdAt  DateTime            @default(now())
+  updatedAt  DateTime            @updatedAt
+}
+
+model RecurringInstance {
+  id                 String           @id @default(auto()) @map("_id") @db.ObjectId
+  recurringPaymentId String           @db.ObjectId
+  recurringPayment   RecurringPayment @relation(fields: [recurringPaymentId], references: [id], onDelete: Cascade)
+  paidDate           DateTime?
+  month              Int
+  year               Int
+  isPaid             Boolean          @default(false)
+  createdAt          DateTime         @default(now())
+
+  @@unique([recurringPaymentId, month, year])
+}
+
+model Earning {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  date      DateTime
+  source    String
+  amount    Float
+  currency  String   @default("PEN")
+  month     Int
+  year      Int
+  notes     String?
+  createdAt DateTime @default(now())
+}

@@ -1,0 +1,17 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm install:*)",
+      "Bash(npx prisma:*)",
+      "Bash(npx tsx:*)",
+      "Bash(npx tsc:*)",
+      "Bash(npm run:*)",
+      "Bash(taskkill /F /IM node.exe)",
+      "Bash(cmd /c \"taskkill /F /IM node.exe\")",
+      "Bash(echo \"exit: $?\")",
+      "Bash(cmd /c \"tasklist /FI \"\"IMAGENAME eq node.exe\"\"\")",
+      "Bash(cmd /c \"tasklist | findstr node\")",
+      "Bash(cmd /c \"del /F /Q \"\"c:\\\\Users\\\\hello\\\\OneDrive\\\\Desktop\\\\Cuentas Departamento\\\\node_modules\\\\.prisma\\\\client\\\\query_engine-windows.dll.node\"\"\")"
+    ]
+  }
+}
