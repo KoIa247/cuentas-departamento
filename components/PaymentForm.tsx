@@ -12,7 +12,6 @@ interface Category {
 
 interface PaymentLine {
   localId: number;
-  categoryId: string;
   item: string;
   amount: string;
   quantity: string;
@@ -26,9 +25,8 @@ interface PaymentFormProps {
 }
 
 let localIdCounter = 0;
-const newLine = (defaultCategoryId: string): PaymentLine => ({
+const newLine = (): PaymentLine => ({
   localId: ++localIdCounter,
-  categoryId: defaultCategoryId,
   item: "",
   amount: "",
   quantity: "1",
@@ -41,12 +39,12 @@ export default function PaymentForm({
   defaultYear,
 }: PaymentFormProps) {
   const today = new Date().toISOString().split("T")[0];
-  const defaultCat = categories[0]?.id ?? "";
 
   const [date, setDate] = useState(today);
   const [currency, setCurrency] = useState("PEN");
+  const [categoryId, setCategoryId] = useState(categories[0]?.id ?? "");
   const [notes, setNotes] = useState("");
-  const [lines, setLines] = useState<PaymentLine[]>([newLine(defaultCat)]);
+  const [lines, setLines] = useState<PaymentLine[]>([newLine()]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -56,7 +54,7 @@ export default function PaymentForm({
     );
   };
 
-  const addLine = () => setLines((prev) => [...prev, newLine(defaultCat)]);
+  const addLine = () => setLines((prev) => [...prev, newLine()]);
 
   const removeLine = (localId: number) => {
     if (lines.length === 1) return;
@@ -64,18 +62,20 @@ export default function PaymentForm({
   };
 
   const total = lines.reduce((sum, l) => {
-    const amt = parseFloat(l.amount) || 0;
-    const qty = parseInt(l.quantity) || 1;
-    return sum + amt * qty;
+    return sum + (parseFloat(l.amount) || 0) * (parseInt(l.quantity) || 1);
   }, 0);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
 
+    if (!categoryId) {
+      setError("Please select a category.");
+      return;
+    }
     for (const l of lines) {
-      if (!l.categoryId || !l.item.trim() || !l.amount) {
-        setError("Please fill in category, item, and amount for every row.");
+      if (!l.item.trim() || !l.amount) {
+        setError("Please fill in item name and amount for every row.");
         return;
       }
     }
@@ -89,7 +89,7 @@ export default function PaymentForm({
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
               date,
-              categoryId: l.categoryId,
+              categoryId,
               item: l.item.trim(),
               amount: parseFloat(l.amount),
               currency,
@@ -110,6 +110,8 @@ export default function PaymentForm({
       setLoading(false);
     }
   };
+
+  const selectedCategory = categories.find((c) => c.id === categoryId);
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
@@ -151,6 +153,36 @@ export default function PaymentForm({
         </div>
       </div>
 
+      {/* Category */}
+      <div>
+        <label className="block text-sm font-medium text-slate-700 mb-1">
+          Category <span className="text-red-500">*</span>
+        </label>
+        <div className="flex items-center gap-2">
+          {selectedCategory && (
+            <div
+              className="w-8 h-8 rounded-lg flex items-center justify-center text-base flex-shrink-0"
+              style={{ backgroundColor: selectedCategory.color + "20" }}
+            >
+              {selectedCategory.icon}
+            </div>
+          )}
+          <select
+            value={categoryId}
+            onChange={(e) => setCategoryId(e.target.value)}
+            required
+            className="flex-1 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white"
+          >
+            <option value="">Select category…</option>
+            {categories.map((cat) => (
+              <option key={cat.id} value={cat.id}>
+                {cat.icon} {cat.name}
+              </option>
+            ))}
+          </select>
+        </div>
+      </div>
+
       {/* Items */}
       <div>
         <div className="flex items-center justify-between mb-2">
@@ -161,8 +193,7 @@ export default function PaymentForm({
         </div>
 
         {/* Column headers */}
-        <div className="grid gap-2 px-1 mb-1" style={{ gridTemplateColumns: "1fr 2fr 1fr 52px 28px" }}>
-          <span className="text-xs text-slate-400">Category</span>
+        <div className="grid gap-2 px-1 mb-1" style={{ gridTemplateColumns: "2fr 1fr 52px 28px" }}>
           <span className="text-xs text-slate-400">Item</span>
           <span className="text-xs text-slate-400">Amount</span>
           <span className="text-xs text-slate-400 text-center">Qty</span>
@@ -174,22 +205,8 @@ export default function PaymentForm({
             <div
               key={line.localId}
               className="grid gap-2 p-2.5 bg-slate-50 rounded-xl border border-slate-100"
-              style={{ gridTemplateColumns: "1fr 2fr 1fr 52px 28px" }}
+              style={{ gridTemplateColumns: "2fr 1fr 52px 28px" }}
             >
-              <select
-                value={line.categoryId}
-                onChange={(e) => updateLine(line.localId, "categoryId", e.target.value)}
-                required
-                className="border border-slate-200 rounded-lg px-2 py-1.5 text-sm bg-white focus:ring-2 focus:ring-blue-500 min-w-0"
-              >
-                <option value="">Cat…</option>
-                {categories.map((cat) => (
-                  <option key={cat.id} value={cat.id}>
-                    {cat.icon} {cat.name}
-                  </option>
-                ))}
-              </select>
-
               <input
                 type="text"
                 value={line.item}
